@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct Customer {
@@ -10,15 +11,29 @@ struct Customer {
 	gboolean is_male;
 };
 
-struct Product {
-	const char *name;
-	const char *color;
-	const char *size;
-	const int price;
-	const int sale_off;
+// struct Product {
+// 	const char *name;
+// 	const char *brand;
+// 	int price;
+// 	int sale_off;
+// };
+
+struct product {
+	int productId; //id cua san pham
+	char *productCode; //ma quan li cua san pham
+	char *productName; //ten san pham
+	int typeId; //id cua productType tuong ung
+	char *brand; //nhan hieu san pham
+	unsigned int price; //gia
+	int quantityInStock; //so luong co trong kho hang
+	char *description; //mo ta san pham
+	char *image; //link anh san pham
+	int saleOff; //phan tram giam gia, e.x. 20 <-> 20%, 30 <-> 30%
 };
 
 struct Customer customer;
+struct product products[5];
+int productSize = 5;
 
 GtkBuilder *builder;
 
@@ -92,7 +107,9 @@ void setInfos(int);
 void to_next_step(void);
 void printCustomer(struct Customer customer);
 void addProductLine(char *data);
-char * printProduct(struct Product product);
+char *printProduct(struct product product);
+void initProduct();
+void fillAllProducts();
 
 void closeApp(GtkWidget *window, gpointer data) {
 	printf("Quit graphic mode.\n");
@@ -334,9 +351,15 @@ void changeStep(int step) {
 
 		gtk_button_set_label(GTK_BUTTON(button_next_step), "Tiếp tục");
 	} else if (step == 2) {
-		struct Product p;
-		p.name = "Ao thun nam";
-		//printProduct(p);
+		// struct product p;
+		// p.productName = "Ao thun nam";
+		// p.brand = "May 10";
+		// p.price = 50000;
+		// p.saleOff = 10;
+		// char *result = printProduct(p);
+		// printf("%s\n", result);
+		initProduct();
+		fillAllProducts();
 		setInfos(step);
 
 		gtk_widget_grab_focus(entry_name_full);
@@ -375,11 +398,54 @@ void addProductLine(char *data) {
 	//gtk_box_pack_start(GTK_BOX(box_products), label_product, TRUE, FALSE, 0);
 }
 
-char *printProduct(struct Product product) {
-	char* temp;
-	temp = strcpy("Name: ", product.name);
-	printf("%s\n", temp);
-	return temp;
+void initProduct() {
+	//struct product *products = (product *) malloc(sizeof(product) * 10);
+
+	products[0].productId = 1;
+	products[0].productName = "Ao Thun nam";
+	products[0].brand = "May 11";
+	products[0].price = 300000;
+	products[0].saleOff = 20;
+
+	products[1].productId = 2;
+	products[1].productName = "Ao Thun nam 2";
+	products[1].brand = "May 11";
+	products[1].price = 400000;
+	products[1].saleOff = 30;
+
+	products[2].productId = 3;
+	products[2].productName = "Ao Thun nam 3";
+	products[2].brand = "May 11";
+	products[2].price = 500000;
+	products[2].saleOff = 40;
+
+	products[3].productId = 4;
+	products[3].productName = "Ao Thun nam 4";
+	products[3].brand = "May 11";
+	products[3].price = 600000;
+	products[3].saleOff = 50;
+}
+
+char *printProduct(struct product product) {
+	char *content = (char *) malloc(sizeof(char) * 200);
+
+	sprintf(content, "%s\t%s\nGia: %d VND\tGiam gia: %d percent",
+		product.productName, product.brand, product.price, product.saleOff);
+
+	return content;
+
+}
+
+void fillAllProducts() {
+
+	for (int i = 0; i < productSize; i++) {
+		struct product p = products[i];
+		// To avoid null data
+		if (products[i].productId != 0) {
+			char *content = printProduct(p);
+			printf("%s\n", content);
+		}
+	}
 }
 
 /**
