@@ -2,8 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <jansson.h>
+#include <unistd.h>
+#include <assert.h>
+#include <signal.h>
 
 struct Customer {
+	char *id;
 	const char *name;
 	const char *email;
 	const char *address;
@@ -93,6 +103,8 @@ const gchar *text_phone_full;
 const gchar *text_message;
 gboolean status_gender;
 
+json_error_t error;
+
 enum {
   COL_NAME = 0,
   COL_PRICE,
@@ -115,6 +127,26 @@ void closeApp(GtkWidget *window, gpointer data) {
 	printf("Quit graphic mode.\n");
 	gtk_main_quit();
 }
+
+/**
+	Sending data to server
+	Parameters:
+		char *type: type of data
+		json_t *data: data object
+		int sockfd: connection
+		void (*callback)(char*): callback function
+*/
+char* get_data(char *type, json_t *data);
+
+/**
+	Get POST value
+	Parameters:
+		json_t *root: root data
+		char *key: key of value
+*/
+const char *get_value(json_t *root, char* key);
+
+int is_customer_info_changes(json_t* root, const gchar* name, const gchar* email, const gchar* address, gboolean gender);
 
 /* Callback allows the application to cancel a close/destroy event (Return TRUE to cancel) */
 gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data) {
@@ -174,6 +206,16 @@ void on_next_step_clicked(GtkWidget *button, gpointer data) {
 			gtk_widget_grab_focus(entry_phone_full);
 			return;
 		}
+	} else if (current_step == 3) {
+		printf("Step %s\n", "order clicked");
+		printf("%s\n", text_message);
+		printf("%s\n", customer.id);
+
+		json_t *data = json_object();
+		json_object_set(data, "id", json_string(customer.id));
+		json_object_set(data, "message", json_string(text_message));
+		char* rstring = get_data("porder", data);
+		printf("%s\n", rstring);
 	}
 
 	to_next_step();
@@ -227,6 +269,9 @@ void on_entry_phone_changed(GtkWidget *entry, gpointer data) {
 
 int main(int argc, char *argv[])
 {
+	// Json parser error variable
+    json_error_t error;
+
 	gtk_init(&argc, &argv);
 
 	int build_status = findWidgets();
@@ -268,6 +313,7 @@ Function to print data of customer struct
 */
 void printCustomer(struct Customer customer) {
 	printf("About customer:\n");
+	printf("id: %s\n", customer.id);
 	printf("name: %s\n", customer.name);
 	printf("email: %s\n", customer.email);
 	printf("adress: %s\n", customer.address);
@@ -286,9 +332,27 @@ void getInfos(int step) {
 		customer.name = text_name;
 		customer.phone = text_phone;
 
+		json_t *data = json_object();
+		json_object_set(data, "phone", json_string(text_phone));
+
+		char* rstring = get_data("gcustomerinfo", data);
+		printf("%s\n", rstring);
+
+		json_t *root = json_loads(rstring, 0, &error);
+
+		customer.email = get_value(root, "email");
+		customer.address = get_value(root, "address");
+		const char *gender = get_value(root, "gender");
+
+		if (strcmp(gender, "1") == 0) {
+			customer.is_male = TRUE;
+		} else {
+			customer.is_male = FALSE;
+		}
+
 	} else if (step == 2) {
 		text_name = gtk_entry_get_text(GTK_ENTRY(entry_name_full));
-		text_phone = gtk_entry_get_text(GTK_ENTRY(entry_phone_full));
+		// text_phone = gtk_entry_get_text(GTK_ENTRY(entry_phone_full));
 		text_name_full = gtk_entry_get_text(GTK_ENTRY(entry_name_full));
 		text_email = gtk_entry_get_text(GTK_ENTRY(entry_email));
 		text_address = gtk_entry_get_text(GTK_ENTRY(entry_address));
@@ -302,10 +366,72 @@ void getInfos(int step) {
 		customer.phone = text_phone_full;
 		if (status_gender) customer.is_male = TRUE;
 		else customer.is_male = FALSE;
+
+		json_t *c_data = json_object();
+		json_object_set(c_data, "phone", json_string(text_phone_full));
+		char* rstring = get_data("gcustomerinfo", c_data);
+		json_t *c_root = json_loads(rstring, 0, &error);
+
+		customer.id = (char *) malloc(30*sizeof(char));
+		strcpy(customer.id, get_value(c_root, "id"));
+
+		printf("%s\n", rstring);
+
+		printf("Is customer info changes: %d\n", is_customer_info_changes(c_root, text_name_full, text_email, text_address, status_gender));
+
+		if (strcmp(get_value(c_root, "phone"), "") == 0) {
+			json_t *data = json_object();
+			json_object_set(data, "name", json_string(text_name_full));
+			json_object_set(data, "email", json_string(text_email));
+			json_object_set(data, "address", json_string(text_address));
+			json_object_set(data, "phone", json_string(text_phone_full));
+			json_object_set(data, "message", json_string(text_message));
+			if (status_gender) json_object_set(data, "gender", json_string("1"));
+			else json_object_set(data, "gender", json_string("0"));
+
+			char* rstring = get_data("pcustomerinfo", data);
+			json_t *e_root = json_loads(rstring, 0, &error);
+
+			customer.id = (char *) malloc(30*sizeof(char));
+			strcpy(customer.id, get_value(e_root, "id"));
+
+			json_decref(e_root);
+			
+
+			// json_t *root = json_loads(rstring, 0, &error);
+		} else {
+			const char *c_id = get_value(c_root, "id");
+			if (is_customer_info_changes(c_root, text_name_full, text_email, text_address, status_gender)) {
+				json_t *data = json_object();
+				json_object_set(data, "id", json_string(c_id));
+				json_object_set(data, "name", json_string(text_name_full));
+				json_object_set(data, "email", json_string(text_email));
+				json_object_set(data, "address", json_string(text_address));
+				if (status_gender) json_object_set(data, "gender", json_string("1"));
+				else json_object_set(data, "gender", json_string("0"));
+
+				char* rstring = get_data("ucustomerinfo", data);
+				printf("%s\n", rstring);
+			}
+		}
+
+		json_decref(c_root);
+		json_decref(c_data);
 	}
 
 	printCustomer(customer);
 	printf("Message: %s\n", text_message);
+}
+
+int is_customer_info_changes(json_t* root, const gchar* name, const gchar* email, const gchar* address, gboolean gender) {
+	if (strcmp(get_value(root, "name"), name) != 0) return 1;
+	if (strcmp(get_value(root, "email"), email) != 0) return 1;
+	if (strcmp(get_value(root, "address"), address) != 0) return 1;
+	gboolean c_gender;
+	if (strcmp(get_value(root, "gender"), "1") == 0) c_gender = TRUE;
+	else c_gender = FALSE;
+	if (c_gender != gender) return 1;
+	return 0;
 }
 
 /**
@@ -313,8 +439,16 @@ Fill infos
 */
 void setInfos(int step) {
 	if (step == 2) {
-		gtk_entry_set_text(GTK_ENTRY(entry_name_full), text_name);
-		gtk_entry_set_text(GTK_ENTRY(entry_phone_full), text_phone);
+		gtk_entry_set_text(GTK_ENTRY(entry_name_full), customer.name);
+		gtk_entry_set_text(GTK_ENTRY(entry_phone_full), customer.phone);
+		gtk_entry_set_text(GTK_ENTRY(entry_email), customer.email);
+		gtk_entry_set_text(GTK_ENTRY(entry_address), customer.address);
+
+		if (customer.is_male) {
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbutton_gender), TRUE);
+		} else {
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbutton_gender), FALSE);
+		}
 
 	} else if (step == 3) {
 		char temp[100];
@@ -512,4 +646,98 @@ int findWidgets() {
 	g_object_unref(G_OBJECT(builder));
 
 	return 0;
+}
+
+/**
+	Sending data to server
+	Parameters:
+		char *type: type of data
+		json_t *data: data object
+		int sockfd: connection
+		void (*callback)(char*): callback function
+*/
+char* get_data(char *type, json_t *data) {
+	int sockfd;
+	int len;
+	struct sockaddr_in address;
+	int result;
+	
+	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+	address.sin_family = PF_INET;
+	// To bind socket with localhost
+	// address.sin_addr.s_addr = inet_addr("127.0.0.1");
+	// To bind socket with all interface
+	address.sin_addr.s_addr = htonl(INADDR_ANY);
+	address.sin_port = htons(9733);
+	len = sizeof(address);
+	result = connect(sockfd, (struct sockaddr *)&address, len);
+
+	if (result == -1) {
+		perror("oops: client");
+		exit(1);
+	}
+
+	pid_t child_pid;
+
+	json_t *root = json_object();
+	json_t *j_type = json_string(type);
+
+	json_object_set(root, "type", j_type);
+	json_object_set(root, "data", data);
+
+	// Convert JSON data to string
+	char *decode = json_dumps(root, 1);
+
+	write(sockfd, decode, 500);
+
+	printf("Send data:\n%s\n", decode);
+
+	char *result_string = (char *) malloc(500*sizeof(char));
+
+	read(sockfd, result_string, 500);
+
+	json_decref(root);
+	json_decref(j_type);
+
+	close(sockfd);
+
+	return result_string;
+}
+
+/**
+	Get POST value
+	Parameters:
+		json_t *root: root data
+		char *key: key of value
+*/
+const char *get_value(json_t *root, char* key) {
+	json_t *is_success = json_object_get(root, "success");
+
+	if (is_success == json_true()) {
+		json_t *j_data = json_object_get(root, "data");
+
+		json_t *j_object = json_object_get(j_data, key);
+
+		if (j_object) {
+			if (json_string_value(j_object)) return json_string_value(j_object);
+			else return "";
+		} else {
+			return "";
+		}
+
+		json_decref(j_data);
+		json_decref(j_object);
+	} else {
+		return "";
+	}
+
+	json_decref(is_success);
+	// json_t *j_object = json_object_get(is_success, key);
+
+	// if (!j_object) {
+	// 	return 0;
+	// } else {
+	// 	if (json_string_value(j_object)) return json_string_value(j_object);
+	// 	else return 0;
+	// }
 }

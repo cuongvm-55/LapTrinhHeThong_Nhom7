@@ -20,45 +20,18 @@
 		int sockfd: connection
 		void (*callback)(char*): callback function
 */
-void get_data(char *type, json_t *data, int sockfd, void (*callback)(char*));
-
-void customer_info_listener(char* response);
+char* get_data(char *type, json_t *data, int sockfd);
 
 char* response_data;
 
-int file_pipes[2];
-
-void ding(int sig) {
-	char *buf = (char *) malloc(500*sizeof(char));
-	printf("Ding : %d\n", getpid());
-	close(file_pipes[1]);
-	int len;
-	while ((len = read(file_pipes[0], buf, 500)) > 0) {
-		printf("%s\n", buf);
-	}
-	printf("len: %d\n", len);
-	close(file_pipes[0]);
-}
-
-void err_quit(char *msg) {
-	perror(msg);
-	exit(EXIT_FAILURE);
-}
-
 int main(int argc, char **argv[]) {
-	char buf[500];
+	// char buf[500];
 	printf("main : %d\n", getpid());
 	// Socket variables
 	int sockfd;
 	int len;
 	struct sockaddr_in address;
 	int result;
-
-	/** Create the pipe */
-	if ((pipe(file_pipes)) < 0) {
-		printf("%d\n", 2);
-		err_quit("pipe");	
-	}
 
 	// Json parser error variable
     json_error_t error;
@@ -79,13 +52,12 @@ int main(int argc, char **argv[]) {
 	}
 
 	json_t *data = json_object();
-	json_object_set(data, "phone", json_string("01672642420"));
-	json_object_set(data, "name", json_string("May Thy"));
+	json_object_set(data, "phone", json_string("01662329830"));
+	//json_object_set(data, "name", json_string("May Thy"));
 
 	response_data = (char *) malloc(500*sizeof(char));
-	get_data("gcustomerinfo", data, sockfd, &customer_info_listener);
-	(void) signal(SIGALRM, ding);
-	pause();
+	char* rstring = get_data("gcustomerinfo", data, sockfd);
+	printf("%s\n", rstring);
 
 	close(sockfd);
 	exit(0);
@@ -99,8 +71,7 @@ int main(int argc, char **argv[]) {
 		int sockfd: connection
 		void (*callback)(char*): callback function
 */
-void get_data(char *type, json_t *data, int sockfd, void (*callback)(char*)) {
-	char buf[500];
+char* get_data(char *type, json_t *data, int sockfd) {
 	pid_t child_pid;
 
 	json_t *root = json_object();
@@ -112,37 +83,16 @@ void get_data(char *type, json_t *data, int sockfd, void (*callback)(char*)) {
 	// Convert JSON data to string
 	char *decode = json_dumps(root, 1);
 
-	// Create a proccess for reading response data
-	if (0 == (child_pid = fork())) {
-		// Send a request to server
-		write(sockfd, decode, 500);
+	write(sockfd, decode, 500);
 
-		printf("Send data:\n%s\n", decode);
+	printf("Send data:\n%s\n", decode);
 
-		char *result_string = (char *) malloc(500*sizeof(char));
+	char *result_string = (char *) malloc(500*sizeof(char));
 
-		read(sockfd, result_string, 500);
-
-		// Run callback
-		// callback(result_string);
-
-		close(file_pipes[0]);
-		write(file_pipes[1], result_string, 500);
-		close(file_pipes[1]);
-
-		printf("Send signal: %d\n", getpid());
-		kill(getppid(), SIGALRM);
-
-		exit(0);
-	}
+	read(sockfd, result_string, 500);
 
 	json_decref(root);
 	json_decref(j_type);
-}
 
-void customer_info_listener(char* response) {
-	printf("My process ID : %d\n", getpid());
-	printf("Data received:\n");
-	strcpy(response_data, response);
-	printf("%s\n", response_data);
+	return result_string;
 }
