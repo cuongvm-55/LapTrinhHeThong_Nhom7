@@ -39,7 +39,7 @@ void response_data(int success, json_t *data, int client_sockfd);
 	GET SPECIFIC DATA FUNCTIONS
 */
 json_t* get_customer(const char *phone);
-json_t* new_customer(const char* name, const char* email, const char* address, const char* phone, const char* gender);
+json_t* new_customer(const char* name, const char* email, const char* address, const char* phone, const char* gender, const char* message);
 json_t* update_customer(const char* id, const char* name, const char* email, const char* address, const char* gender);
 json_t* new_order(const char* customer_id, const char* message);
 
@@ -114,7 +114,7 @@ int main(int argc, char*argv[]) {
 		    		const char * phone = get_value(root, "phone");
 		    		const char * gender = get_value(root, "gender");
 
-		    		json_t *data = new_customer(name, email, address, phone, gender);
+		    		json_t *data = new_customer(name, email, address, phone, gender, "test");
 
 		    		response_data(1, data, client_sockfd);
 
@@ -181,7 +181,7 @@ json_t* get_customer(const char *phone) {
 }
 
 json_t* new_customer(const char* name, const char* email, const char* address,
-	const char* phone, const char* gender) {
+	const char* phone, const char* gender, const char* message) {
 	MYSQL_RES *res_ptr;
 
 	char query[200];
@@ -295,3 +295,63 @@ MYSQL_RES* get_data_from_database(char *query) {
 
 	mysql_library_end();
 }
+
+// json_t* get_customer_data(char *phone) {
+
+// 	int result;
+// 	mysql_init(&my_connection);
+// 	if (mysql_real_connect(&my_connection, "localhost", "root", "6789", "shop", 0, NULL, 0)) {
+// 		printf("Connection is successfully\n");
+// 		result = mysql_query(&my_connection, "SET NAMES utf8");
+
+// 		char query[100];
+		
+// 		sprintf(query, "SELECT * FROM customer WHERE phone=%s", phone);
+
+// 		result = mysql_query(&my_connection, query);
+// 		if (!result) {
+// 			res_ptr = mysql_store_result(&my_connection);
+// 			if (res_ptr) {
+// 				printf("Retrieved %lu rows\n", (unsigned long) mysql_num_rows(res_ptr));
+// 				printf("List of results\n");
+// 				while ((sqlrow = mysql_fetch_row(res_ptr))) {
+// 					printf("Customer ID: %s, Customer name: %s\n", sqlrow[0], sqlrow[1]);
+
+// 					json_t *data = json_object();
+// 					json_object_set(data, "id", json_string(sqlrow[0]));
+// 					json_object_set(data, "name", json_string(sqlrow[1]));
+// 					json_object_set(data, "phone", json_string(sqlrow[2]));
+// 					json_object_set(data, "address", json_string(sqlrow[3]));
+// 					json_object_set(data, "email", json_string(sqlrow[4]));
+// 					json_object_set(data, "gender", json_string(sqlrow[5]));
+// 					json_object_set(data, "created_at", json_string(sqlrow[6]));
+// 					json_object_set(data, "updated_at", json_string(sqlrow[7]));
+
+// 					return data;
+// 				}
+
+// 				if (mysql_errno(&my_connection)) {
+// 					fprintf(stderr, "Retrive error: %s\n", mysql_error(&my_connection));
+// 				}
+
+// 				mysql_free_result(res_ptr);
+// 			}
+// 		} else {
+// 			printf("SELECT error: %s\n", mysql_error(&my_connection));
+// 			return json_object();
+// 		}
+
+// 		mysql_close(&my_connection);
+
+// 	} else {
+// 		fprintf(stderr, "Connection failed\n");
+// 		if (mysql_errno(&my_connection)) {
+// 			fprintf(stderr, "Connection error %d: %s\n", mysql_errno(&my_connection), mysql_error(&my_connection));
+// 		}
+
+// 		return json_object();
+// 	}
+
+// 	mysql_library_end();
+// 	return json_object();
+// }
