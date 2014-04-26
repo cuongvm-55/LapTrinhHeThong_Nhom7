@@ -1,0 +1,24 @@
+GtkWindow {
+   background-color: #FFF;
+}
+
+GtkFrame {
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 0px;
+    border-color: #ccc;
+}
+
+GtkTreeView {
+    -GtkWidget-focus-line-width: 0;
+    -GtkTreeView-vertical-separator: 20;  /* height of cells */
+    background-color: #fff;   /*  CadetBlue  */
+}
+
+GtkLinkButton {
+    color: #000;
+}
+
+GtkLabel{
+    font-size: 10px;
+}

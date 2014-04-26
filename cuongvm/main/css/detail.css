@@ -1,0 +1,19 @@
+GtkWindow {
+   background-color: #FFF;
+}
+
+GtkFrame {
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 1px;
+    border-color: #ccc;
+    box-shadow: 0 0 5px #333 inset;
+}
+
+GtkLinkButton {
+    color: #000;
+}
+
+GtkLabel{
+    font-size: 12px;
+}
