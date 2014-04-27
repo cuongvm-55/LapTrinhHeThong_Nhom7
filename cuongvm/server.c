@@ -86,14 +86,14 @@ int main(int argc, char*argv[]) {
     c = sizeof(struct sockaddr_in);
     int i=0;
     while(client_sock = accept(server_sockfd, (struct sockaddr*)&cli_addr, (socklen_t*)&c)){
-        printf("Connection accepted, Client - %d", i);
+        printf("Connection accepted, Client - %d\n", i);
         pthread_t sniffer_thread;
         new_sock = (int *)malloc(1*sizeof(int));
         *new_sock = client_sock;
          
         if( pthread_create( &sniffer_thread , NULL ,  clientFunc , (void*) new_sock) < 0)
         {
-            perror("could not create thread");
+            perror("could not create thread\n");
             return 1;
         }
         i++;
@@ -104,7 +104,7 @@ int main(int argc, char*argv[]) {
     
     if (client_sock < 0)
     {
-        perror("accept failed");
+        perror("accept failed\n");
         return 1;
     }
 
@@ -190,7 +190,7 @@ void *clientFunc(void *socket_desc){
 				}else if(strcmp(type, "gproduct") == 0){
 					int productId = atoi(get_value(root, "productId"));
 
-					printf("productId from Client is %d", productId);
+					printf("productId from Client is %d\n", productId);
 
 					json_t *data = get_product(productId);
 
@@ -199,7 +199,7 @@ void *clientFunc(void *socket_desc){
 					int typeId = atoi(get_value(root, "typeId"));
 					current_page = atoi(get_value(root, "current_page"));
 
-					printf("typeId from Client is %d", typeId);
+					printf("typeId from Client is %d\n", typeId);
 
 					json_t *data = get_all_product_by_typeid(typeId);
 
