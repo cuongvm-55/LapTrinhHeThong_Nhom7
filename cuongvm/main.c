@@ -6,7 +6,7 @@
 #include "lib/curl/libdownload_img.h"
 
 //COMPILE
-/*gcc -g newui.c -o newui 
+/*gcc -g main.c -o main 
       `pkg-config gtk+-3.0 --cflags --libs`
       -L lib/mysql_sockets -lmysql_socket 
       -L lib/curl -ldownload_img
