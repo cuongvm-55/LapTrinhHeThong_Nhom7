@@ -2,8 +2,8 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdio.h>
-#include "lib/mysql_sockets/libmysql_socket.h"
-#include "lib/curl/libdownload_img.h"
+#include "libs/mysql_sockets/libmysql_socket.h"
+#include "libs/curl/libdownload_img.h"
 
 //COMPILE
 /*gcc -g main.c -o main 
