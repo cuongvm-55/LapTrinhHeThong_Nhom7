@@ -13,9 +13,7 @@
 #include <pthread.h>
 #define BUFSZ PIPE_BUF
 //Compile
-//gcc -o client client.c `pkg-config jansson --cflags --libs`
-
-
+//gcc -o client_pthread client_pthread.c `pkg-config jansson --cflags --libs` -lpthread
 
 struct product{
 	int productId; //id cua san pham
@@ -143,30 +141,19 @@ int main(int argc, char **argv[]) {
 	//getTypeByGender(sockfd, "2");
 	//get_data("gproduct", data, sockfd, &customer_info_listener);
 
-	//json_t *productlist = json_array();
-	
-	//get_data("gallproduct", json_object(), sockfd, &customer_info_listener);
-	
-	//json_t *data = json_object();
-	//json_object_set(data, "gender", json_string("2"));
-
-	//response_data = (char *) malloc(500*sizeof(char));
-	//get_data("ggendertype", data, sockfd, &customer_info_listener);
-	//get_data("gallproduct", json_object(), sockfd, NULL);
-	//(void) signal(SIGALRM, get_all_product_listener);
-
 	struct productType product_type_list[30]; //luu mang product tra ve tu server
 	struct product product_list[30]; //luu mang product type tra ve tu server
 	int product_list_size; //do lon mang product_list
 	int product_type_list_size; //do lon mang product_type_list
 
-	//get_all_product(sockfd,"0", product_list, &product_list_size);
+
+	get_all_product(sockfd,"0", product_list, &product_list_size);
+		//get_all_product_by_type(sockfd,"1","0",product_list,&product_list_size);
+	print_product_list(product_list, product_list_size);
 	get_product_type_by_gender(sockfd, "2", product_type_list, &product_type_list_size);
-	//get_all_product_by_type(sockfd, "1", "0");
-	//print_product_list(product_list, product_list_size);
-	//pause();
 	print_product_type_list(product_type_list, product_type_list_size);
-	close(sockfd);
+	
+	//close(sockfd);
 	exit(0);
 }
 
@@ -206,7 +193,7 @@ char* get_data(char *type, json_t *data, int* sockfd) {
 		perror("Error when create pthread to read data from server!\n");
 		return;
 	}
-	printf("Wait for the thread to finish...");
+	printf("Wait for the thread to finish...\n");
 	res = pthread_join(a_thread, &thread_result);
 	if (res != 0){
 		perror("Thread join failed");
@@ -220,8 +207,11 @@ void *thread_function(void *arg){
 	printf("Getting data from server...\n");
 	int* sockfd=(int*)arg;
 	char* result_string = (char *) malloc(500*sizeof(char));
-	read(*sockfd, result_string, 500);
-	sleep(3);
+	while(read(*sockfd, result_string, 500) <= 0){
+	}
+	//read(*sockfd, result_string, 500);
+	//printf("Inside thread, result_string : \n%s\n", result_string);
+	//sleep(3);
 	//strcpy(response_data, result_string);
 	pthread_exit(result_string);
 }
@@ -355,7 +345,6 @@ void get_product_type_list_listener(char* response_data,
 	
 	}
 	*product_type_list_size = n;
-	//print_product_type_list();
 }
 
 void get_product_type_by_gender(int sockfd,

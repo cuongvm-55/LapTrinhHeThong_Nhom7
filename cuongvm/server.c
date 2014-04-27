@@ -11,7 +11,7 @@
 #include <math.h>
 
 //Compile
-//gcc -o server server.c `pkg-config jansson --cflags --libs` `mysql_config --cflags --libs`
+//gcc -o server server.c `pkg-config jansson --cflags --libs` `mysql_config --cflags --libs` -lpthread
 
 MYSQL my_connection;
 
@@ -60,25 +60,15 @@ json_t* get_all_product(); //Lay tat ca product trong csdl
 
 json_t* get_type_by_gender(int gender); //Lay danh muc cac loaij quan ao theo tung gioi tinh
 
+
+void *clientFunc(void *arg); //Ham xu li nhieu thread tu nhieu nguoi dung
+
 int main(int argc, char*argv[]) {
+	int server_len, c;
+	int server_sockfd, client_sock;
+	int *new_sock;
 
-	char* test = (char *) malloc(500*sizeof(char));
-
-    json_error_t error;
-	json_t *root;
-	json_t *data;
-	json_t *j_type;
-	json_t *j_data;
-	json_t *phone;
-
-	const char *type;
-	const char *customer_phone;
-
-	int server_sockfd, client_sockfd;
-	int server_len, client_len;
-
-	struct sockaddr_in server_address;
-	struct sockaddr_in client_address;
+	struct sockaddr_in server_address, cli_addr;
 
 	server_sockfd = socket(PF_INET, SOCK_STREAM, 0);
 	server_address.sin_family = PF_INET;
@@ -91,24 +81,68 @@ int main(int argc, char*argv[]) {
 
 	listen(server_sockfd, 5);
 
-	while (1) {
-		test = (char *) malloc(500*sizeof(char));
-		printf("server waitting\n");
-		client_len = sizeof(client_address);
-		client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_address, &client_len);
+	//Accept and incoming connection
+    puts("Waiting for incoming connections...");
+    c = sizeof(struct sockaddr_in);
+    int i=0;
+    while(client_sock = accept(server_sockfd, (struct sockaddr*)&cli_addr, (socklen_t*)&c)){
+        printf("Connection accepted, Client - %d", i);
+        pthread_t sniffer_thread;
+        new_sock = (int *)malloc(1*sizeof(int));
+        *new_sock = client_sock;
+         
+        if( pthread_create( &sniffer_thread , NULL ,  clientFunc , (void*) new_sock) < 0)
+        {
+            perror("could not create thread");
+            return 1;
+        }
+        i++;
+        //Now join the thread , so that we dont terminate before the thread
+        //pthread_join( sniffer_thread , NULL);
+        //puts("Handler assigned");
+    }
+    
+    if (client_sock < 0)
+    {
+        perror("accept failed");
+        return 1;
+    }
 
+    //close(server_sockfd);
+	return 1;
+}
+
+//------------------------Ham xu li yeu cau tu client-------------------------------------------------------
+void *clientFunc(void *socket_desc){
+	//Lay socket desriptor gui tu tien trinh chinh
+    int client_sockfd = *(int*)socket_desc;
+
+	const char *type;
+	const char *customer_phone;
+	char* test = (char *) malloc(500*sizeof(char));
+
+	json_error_t error;
+	json_t *root;
+	json_t *data;
+	json_t *j_type;
+	json_t *j_data;
+	json_t *phone;
+
+	while(1){
 		read(client_sockfd, test, 500);
 
 		root = json_loads(test, 0, &error);
-
-		free(test);
+		strcpy(test, "");
+		//free(test);
 
 		if(!root) {
-	        fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+	        //fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
 	        // Response error to client
+	        
 			response_data(0, json_object(), client_sockfd);
-
-    	} else {
+			close(client_sockfd);
+			pthread_exit(NULL);
+		} else {
 	    	j_type = json_object_get(root, "type");
 	    	j_data = json_object_get(root, "data");
 
@@ -185,12 +219,14 @@ int main(int argc, char*argv[]) {
 		    		response_data(0, json_object(), client_sockfd);
 		    	}
 	    	}
-    	}
-
-		close(client_sockfd);
+		}
+		fflush(stdout);
 	}
+
 }
 
+
+//-------------------------Cac ham thao tac MYSQL--------------------------------------------------
 json_t* get_product(int productId) {
 	MYSQL_RES *res_ptr;
 	MYSQL_ROW sqlrow;
@@ -454,6 +490,7 @@ json_t* new_order(const char* customer_id, const char* message) {
 	return json_object();
 }
 
+//--------------------------------Cac ham thao tac jansson------------------------------------------------
 /**
 	Get POST value
 	Parameters:
@@ -504,7 +541,7 @@ MYSQL_RES* get_data_from_database(char *query) {
 	int result;
 	mysql_init(&my_connection);
 	if (mysql_real_connect(&my_connection, "localhost", "root", "root", "clothes_shop", 0, NULL, 0)) {
-		printf("Connection is successfully\n");
+		printf("MYSQL connection is successfully\n");
 		result = mysql_query(&my_connection, "SET NAMES utf8");
 
 		result = mysql_query(&my_connection, query);
