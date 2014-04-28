@@ -11,14 +11,14 @@
 #include <math.h>
 
 //Compile
-//gcc -o server server.c `pkg-config jansson --cflags --libs` `mysql_config --cflags --libs` -lpthread
+//gcc -o server server.c `pkg-config jansson --cflags --libs` `mysql_config --cflags --libs` -lpthread -lm
 
 MYSQL my_connection;
 
 //Du lieu phan trang
-const int ENTRIES_PER_PAGE = 6; //so luong ban ghi tren 1 trang 
+const int ENTRIES_PER_PAGE = 8; //so luong ban ghi tren 1 trang 
 int current_page; //trang hien tai
-int total_page; //tong so trang
+int total_page = 0; //tong so trang
 int get_total_page(char* query);//tra ve tong so trang ket qua tu cau lenh sql
 
 /**
@@ -297,6 +297,14 @@ json_t* get_all_product_by_typeid(int typeId) {
 			json_array_append(array, data);
 		}
 
+		//object chua total_page
+		json_t *data = json_object();
+		char totalpage[5];
+		strcpy(totalpage, "");
+		sprintf(totalpage, "%d", total_page);
+		json_object_set(data, "total_page", json_string(totalpage) );
+		json_array_append(array, data);
+
 		mysql_free_result(res_ptr);
 
 		return array;
@@ -340,6 +348,13 @@ json_t* get_all_product_by_typename(char* typename)
 
 			json_array_append(array, data);
 		}
+		//object chua total_page
+		json_t *data = json_object();
+		char totalpage[5];
+		strcpy(totalpage, "");
+		sprintf(totalpage, "%d", total_page);
+		json_object_set(data, "total_page", json_string(totalpage) );
+		json_array_append(array, data);
 
 		mysql_free_result(res_ptr);
 
@@ -356,11 +371,12 @@ json_t* get_all_product() {
 
 	//Paging
 	total_page = get_total_page("SELECT * FROM Product");
-
+	printf("%s\nTotal_page = %d\n", query, total_page);
+	
 	//lay du lieu sau khi phan trang
 	strcpy(query, "");
 	sprintf(query, "SELECT * FROM Product LIMIT %d,%d", current_page, ENTRIES_PER_PAGE);
-	printf("%s\n", query);
+
 	res_ptr = get_data_from_database(query);
 
 	if (res_ptr) {
@@ -381,6 +397,16 @@ json_t* get_all_product() {
 
 			json_array_append(array, data);
 		}
+
+		//object chua total_page
+		json_t *data = json_object();
+		char totalpage[5];
+		strcpy(totalpage, "");
+		sprintf(totalpage, "%d", total_page);
+		json_object_set(data, "total_page", json_string(totalpage) );
+		json_array_append(array, data);
+		
+
 		mysql_free_result(res_ptr);
 
 		return array;
@@ -577,5 +603,6 @@ int get_total_page(char* query){
 
 	number_of_entries = (unsigned long)mysql_num_rows(res_ptr);
 	mysql_free_result(res_ptr);
-	return ceil( (float)(number_of_entries/ENTRIES_PER_PAGE) );
+	printf("number_of_entries = %lu, ENTRIES_PER_PAGE = %d\n", number_of_entries, ENTRIES_PER_PAGE);
+	return ceil( (float)number_of_entries/(float)ENTRIES_PER_PAGE );
 }

@@ -36,12 +36,14 @@ Lay tat ca cac san pham trong csdl
 		char* current_page; trang hien tai, phuc vu viec phan trang
 		struct product product_list[]; mang luu tru danh sach san pham tra ve
 		int *product_list_size); do lon cua mang product_list
+		char* total_page; tong so trang ket qua
 
 **/
 void get_all_product(int sockfd,
 					 char* current_page,
 					 struct product product_list[],
-					 int *product_list_size);
+					 int *product_list_size,
+					 char* total_page);
 
 /**
 Lay tat ca cac san pham trong 1 type
@@ -51,12 +53,14 @@ Lay tat ca cac san pham trong 1 type
 		char* current_page; trang hien tai, phuc vu viec phan trang
 		struct product product_list[]; mang luu tru danh sach san pham tra ve
 		int *product_list_size; do lon cua mang product_list
+		char* total_page; tong so trang ket qua
 **/
 void get_all_product_by_type(int sockfd,
 							char* typeId,
 							char* current_page,
 							struct product product_list[],
-				 			int *product_list_size);
+				 			int *product_list_size,
+				 			char* total_page);
 
 
 /**

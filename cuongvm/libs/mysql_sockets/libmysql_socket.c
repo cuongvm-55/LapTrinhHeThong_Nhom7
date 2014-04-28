@@ -159,7 +159,7 @@ const char *get_value(json_t *root, char* key) {
 //----------------------------------------------Get Product List------------------------------------------------
 void get_product_list_listener(char* response_data, 
 							 	struct product product_list[], 
-								int *product_list_size) {
+								int *product_list_size, char* total_page) {
 	int i =0;
 	json_error_t error;
 	size_t n=0;
@@ -177,7 +177,7 @@ void get_product_list_listener(char* response_data,
 
 	printf("Size: n = %d\n", n);
 
-	for (i=0;i<n;i++){
+	for (i=0;i<n-1;i++){
 		element = json_array_get(object, i);
 
 		product_list[i].productId = atoi(json_string_value(json_object_get(element, "productId")));
@@ -192,34 +192,46 @@ void get_product_list_listener(char* response_data,
 		product_list[i].saleOff = atoi( json_string_value(json_object_get(element, "saleOff")) );
 		
 	}
-	*product_list_size = n;
+
+	//Lay ra total_page
+	if (n > 0){
+		element = json_array_get(object, n-1);
+		strcpy(total_page, json_string_value(json_object_get(element, "total_page")));
+	}
+	else{
+		strcpy(total_page, "0");
+	}
+
+	*product_list_size = n-1;
 }
 
 void get_all_product_by_type(int sockfd,
 							 char* typeId,
 							 char* page_num,
 							 struct product product_list[],
-					 		 int *product_list_size){
+					 		 int *product_list_size,
+					 		 char* total_page){
 	json_t *data = json_object();
 	json_object_set(data, "typeId", json_string(typeId));
 	json_object_set(data, "current_page", json_string(page_num));
 
 	char* response_data = get_data("gtypeid", data, &sockfd);
 	
-	get_product_list_listener(response_data, product_list, product_list_size);
+	get_product_list_listener(response_data, product_list, product_list_size, total_page);
 }
 
 
 void get_all_product(int sockfd,
 					 char* page_num,
 					 struct product product_list[],
-					 int *product_list_size){
+					 int *product_list_size,
+					 char* total_page){
 	json_t *data = json_object();
 	json_object_set(data, "current_page", json_string(page_num));
 
 	char* response_data = get_data("gallproduct", data, &sockfd);
 	//printf("data from server: \n%s\n", response_data);
-	get_product_list_listener(response_data, product_list, product_list_size);
+	get_product_list_listener(response_data, product_list, product_list_size, total_page);
 }
 
 //-----------------------------------------Get Product Type List----------------------------------------
