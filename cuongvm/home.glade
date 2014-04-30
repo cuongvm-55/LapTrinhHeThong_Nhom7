@@ -9,14 +9,17 @@
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkImage" id="image8">
+          <object class="GtkBox" id="box_banner">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="pixbuf">katarina.jpg</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">False</property>
+            <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -28,6 +31,7 @@
               <object class="GtkBox" id="box8">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_top">2</property>
                 <property name="orientation">vertical</property>
                 <child>
                   <placeholder/>
@@ -35,7 +39,7 @@
               </object>
               <packing>
                 <property name="resize">False</property>
-                <property name="shrink">False</property>
+                <property name="shrink">True</property>
               </packing>
             </child>
             <child>
@@ -50,10 +54,11 @@
                     <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkButton" id="button_login">
-                        <property name="label" translatable="yes">Login</property>
+                        <property name="label" translatable="yes">Đăng nhập</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Đăng nhập admin</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -63,10 +68,11 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="button_view_card">
-                        <property name="label" translatable="yes">Your Card</property>
+                        <property name="label" translatable="yes">Giỏ hàng</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Xem danh sách sản phẩm trong giỏ hàng</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -85,8 +91,9 @@
                   <object class="GtkGrid" id="grid1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="margin_left">4</property>
                     <property name="row_spacing">5</property>
-                    <property name="column_spacing">10</property>
+                    <property name="column_spacing">5</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -118,7 +125,6 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">False</property>
-                    <property name="padding">5</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -128,10 +134,11 @@
                     <property name="can_focus">False</property>
                     <child>
                       <object class="GtkButton" id="button_prev">
-                        <property name="label" translatable="yes">prev</property>
+                        <property name="label" translatable="yes">Trước</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Trang trước</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -153,10 +160,11 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="button_next">
-                        <property name="label" translatable="yes">next</property>
+                        <property name="label" translatable="yes">Sau</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Trang sau</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -173,14 +181,14 @@
                 </child>
               </object>
               <packing>
-                <property name="resize">True</property>
-                <property name="shrink">True</property>
+                <property name="resize">False</property>
+                <property name="shrink">False</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">False</property>
+            <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -188,7 +196,7 @@
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">University Of Engineering &amp; Technology, VNU</property>
+            <property name="label" translatable="yes">Summer 2014, University Of Engineering &amp; Technology, VNU</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -201,6 +209,10 @@
   </object>
   <object class="GtkWindow" id="window_product_detail">
     <property name="can_focus">False</property>
+    <property name="resizable">False</property>
+    <property name="window_position">center-on-parent</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="hide_titlebar_when_maximized">True</property>
     <child>
       <object class="GtkPaned" id="paned2">
         <property name="visible">True</property>
@@ -317,6 +329,7 @@
               <object class="GtkFrame" id="frame_description">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="valign">start</property>
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">none</property>
                 <child>
@@ -339,10 +352,11 @@
             </child>
             <child>
               <object class="GtkButton" id="add_to_card">
-                <property name="label" translatable="yes">Add to card</property>
+                <property name="label" translatable="yes">Thêm vào giỏ hàng</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="receives_default">True</property>
+                <property name="tooltip_text" translatable="yes">Thêm sản phẩm này vào giỏ hàng</property>
               </object>
               <packing>
                 <property name="expand">False</property>
