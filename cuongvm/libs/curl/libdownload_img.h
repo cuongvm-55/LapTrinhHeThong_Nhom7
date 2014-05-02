@@ -13,4 +13,7 @@
 **/
 void download_image(char* url, char* filename);
 
+//Check web server connection
+int is_web_server_connected(char* url);
+
 #endif

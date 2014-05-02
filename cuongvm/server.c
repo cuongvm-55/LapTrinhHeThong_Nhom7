@@ -16,9 +16,10 @@
 MYSQL my_connection;
 
 //Du lieu phan trang
-const int ENTRIES_PER_PAGE = 8; //so luong ban ghi tren 1 trang 
+const int ENTRIES_PER_PAGE = 2; //so luong ban ghi tren 1 trang 
 int current_page; //trang hien tai
 int total_page = 0; //tong so trang
+unsigned long number_of_entries; //so ban ghi lay duoc
 int get_total_page(char* query);//tra ve tong so trang ket qua tu cau lenh sql
 
 /**
@@ -54,8 +55,8 @@ json_t* update_customer(const char* id, const char* name, const char* email, con
 json_t* new_order(const char* customer_id, const char* message);
 
 json_t* get_product(int productId); //Lay product thong qua productID
-json_t* get_all_product_by_typeid(int typeId); //Lay tat ca product trong typeId
-json_t* get_all_product_by_typename(char* typeName); //Lay tat ca product trong typeId
+json_t* get_all_product_by_typeid(int typeId); //Lay tat ca product theo typeId
+json_t* get_all_product_by_gender(int gender); //Lay tat ca product theo gender
 json_t* get_all_product(); //Lay tat ca product trong csdl
 
 json_t* get_type_by_gender(int gender); //Lay danh muc cac loaij quan ao theo tung gioi tinh
@@ -129,6 +130,7 @@ void *clientFunc(void *socket_desc){
 	json_t *phone;
 
 	while(1){
+		printf("Inside while loop~\n");
 		read(client_sockfd, test, 500);
 
 		root = json_loads(test, 0, &error);
@@ -136,7 +138,7 @@ void *clientFunc(void *socket_desc){
 		//free(test);
 
 		if(!root) {
-	        //fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+	        fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
 	        // Response error to client
 	        
 			response_data(0, json_object(), client_sockfd);
@@ -205,11 +207,20 @@ void *clientFunc(void *socket_desc){
 
 					response_data(1, data, client_sockfd);
 				}else if(strcmp(type, "gallproduct") == 0){
+					current_page = atoi(get_value(root, "current_page"));
+				
 					json_t *data = get_all_product();
-
 					response_data(1, data, client_sockfd);
-				}else if(strcmp(type, "ggendertype") == 0){
 
+				}else if(strcmp(type, "ggender") == 0){
+					current_page = atoi(get_value(root, "current_page"));
+					int gender = atoi(get_value(root, "gender"));
+
+					json_t *data = get_all_product_by_gender(gender);
+					response_data(1, data, client_sockfd);
+
+				}else if(strcmp(type, "ggendertype") == 0){
+					printf("Query Type: ggendertype\ncurrent_page: %d\ntotal_page: %d\n", current_page, total_page);
 					int gender = atoi(get_value(root, "gender"));
 					json_t *data = get_type_by_gender(gender);
 
@@ -232,7 +243,7 @@ json_t* get_product(int productId) {
 	MYSQL_ROW sqlrow;
 
 	char query[100];
-	sprintf(query, "SELECT * FROM Product WHERE productId=%d", productId);
+	sprintf(query, "SELECT * FROM product WHERE productId=%d", productId);
 	res_ptr = get_data_from_database(query);
 
 	if (res_ptr) {
@@ -266,102 +277,118 @@ json_t* get_all_product_by_typeid(int typeId) {
 	MYSQL_ROW sqlrow;
 	char query[100];
 
+	json_t *array = json_array();
+
 	//Phan trang
-	sprintf(query, "SELECT * FROM Product WHERE typeId=%d", typeId);	
+	sprintf(query, "SELECT * FROM product WHERE typeId=%d", typeId);	
 	total_page = get_total_page(query);
 
-	//lay du lieu sau khi phan trang
-	strcpy(query, "");
-	sprintf(query, "SELECT * FROM Product WHERE typeId=%d LIMIT %d,%d", typeId, current_page, ENTRIES_PER_PAGE);
-	printf("%s\n", query);
-	res_ptr = get_data_from_database(query);
-
-	if (res_ptr) {
-		
-		json_t *array = json_array();
-
-		while ((sqlrow = mysql_fetch_row(res_ptr))) {
-			json_t *data = json_object();
-
-			json_object_set(data, "productId", json_string(sqlrow[0]) );
-			json_object_set(data, "productCode", json_string(sqlrow[1]));
-			json_object_set(data, "productName", json_string(sqlrow[2]));
-			json_object_set(data, "typeId", json_string(sqlrow[3]) );
-			json_object_set(data, "brand", json_string(sqlrow[4]));
-			json_object_set(data, "price", json_string( sqlrow[5]) );
-			json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
-			json_object_set(data, "description", json_string(sqlrow[7]));
-			json_object_set(data, "image", json_string(sqlrow[8]));
-			json_object_set(data, "saleOff", json_string(sqlrow[9]) );
-
-			json_array_append(array, data);
+	if (total_page > 0){
+		//lay du lieu sau khi phan trang
+		int p1 = (current_page*ENTRIES_PER_PAGE);
+		int p2 = ENTRIES_PER_PAGE;
+		if (current_page == (total_page-1)){
+			p2 = number_of_entries - current_page*ENTRIES_PER_PAGE;
 		}
 
-		//object chua total_page
-		json_t *data = json_object();
-		char totalpage[5];
-		strcpy(totalpage, "");
-		sprintf(totalpage, "%d", total_page);
-		json_object_set(data, "total_page", json_string(totalpage) );
-		json_array_append(array, data);
+		strcpy(query, "");
+		sprintf(query, "SELECT * FROM product WHERE typeId=%d LIMIT %d,%d", typeId, p1, p2);
+		//printf("%s\n", query);
+		res_ptr = get_data_from_database(query);
 
-		mysql_free_result(res_ptr);
+		if (res_ptr) {
+			while ((sqlrow = mysql_fetch_row(res_ptr))) {
+				json_t *data = json_object();
 
-		return array;
-	} else {
-		return json_array();
-	}	
+				json_object_set(data, "productId", json_string(sqlrow[0]) );
+				//json_object_set(data, "productCode", json_string(sqlrow[1]));
+				json_object_set(data, "productName", json_string(sqlrow[2]));
+				//json_object_set(data, "typeId", json_string(sqlrow[3]) );
+				//json_object_set(data, "brand", json_string(sqlrow[4]));
+				json_object_set(data, "price", json_string( sqlrow[5]) );
+				//json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
+				//json_object_set(data, "description", json_string(sqlrow[7]));
+				json_object_set(data, "image", json_string(sqlrow[8]));
+				//json_object_set(data, "saleOff", json_string(sqlrow[9]) );
+
+				json_array_append(array, data);
+				json_decref(data);
+			}
+
+			mysql_free_result(res_ptr);
+		}
+	}
+	//object chua total_page
+	json_t *paging_data = json_object();
+	char totalpage[5];
+	strcpy(totalpage, "");
+	sprintf(totalpage, "%d", total_page);
+	json_object_set(paging_data, "total_page", json_string(totalpage) );
+	json_array_append(array, paging_data);
+	json_decref(paging_data);
+
+	return array;
 }
 
-json_t* get_all_product_by_typename(char* typename)
+json_t* get_all_product_by_gender(int gender)
 {
 	MYSQL_RES *res_ptr;
 	MYSQL_ROW sqlrow;
-	char query[100];
+	char query[200];
+
+	json_t *array = json_array();
 
 	//Paging
-	sprintf(query, "SELECT * FROM Product WHERE typeId IN (SELECT typeId FROM ProductType WHERE typeName LIKE %s)", typename);
+	strcpy(query, "");
+	sprintf(query, "SELECT ProductId FROM product INNER JOIN producttype ON product.TypeId = producttype.TypeId WHERE gender=%d", gender);
 	
 	total_page = get_total_page(query);
-
-	//lay du lieu sau khi phan trang
-	strcpy(query, "");
-	sprintf(query, "SELECT * FROM Product WHERE typeId IN (SELECT typeId FROM ProductType WHERE typeName LIKE %s) LIMIT %d,%d", typename, current_page, ENTRIES_PER_PAGE);
-	printf("%s\n", query);
-	res_ptr = get_data_from_database(query);
-
-	if (res_ptr) {
-		json_t *array = json_array();
-
-		while ((sqlrow = mysql_fetch_row(res_ptr))) {
-			json_t *data = json_object();
-			json_object_set(data, "productId", json_string(sqlrow[0]) );
-			json_object_set(data, "productCode", json_string(sqlrow[1]));
-			json_object_set(data, "productName", json_string(sqlrow[2]));
-			json_object_set(data, "typeId", json_string(sqlrow[3]) );
-			json_object_set(data, "brand", json_string(sqlrow[4]));
-			json_object_set(data, "price", json_string( sqlrow[5]) );
-			json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
-			json_object_set(data, "description", json_string(sqlrow[7]));
-			json_object_set(data, "image", json_string(sqlrow[8]));
-			json_object_set(data, "saleOff", json_string(sqlrow[9]) );
-
-			json_array_append(array, data);
+	printf("INside Query ggender\ncurrent_page: %d\ntotal_page: %d\n", current_page, total_page);
+	if (total_page > 0){
+		//lay du lieu sau khi phan trang
+		int p1 = (current_page*ENTRIES_PER_PAGE);
+		int p2 = ENTRIES_PER_PAGE;
+		if (current_page == (total_page-1)){
+			p2 = number_of_entries - current_page*ENTRIES_PER_PAGE;
 		}
-		//object chua total_page
-		json_t *data = json_object();
-		char totalpage[5];
-		strcpy(totalpage, "");
-		sprintf(totalpage, "%d", total_page);
-		json_object_set(data, "total_page", json_string(totalpage) );
-		json_array_append(array, data);
+		strcpy(query, "");
+		sprintf(query, "SELECT * FROM product INNER JOIN producttype ON product.TypeId = producttype.TypeId WHERE gender=%d LIMIT %d, %d", gender, p1, p2);
+		printf("%s\n", query);
+		res_ptr = get_data_from_database(query);
 
-		mysql_free_result(res_ptr);
 
-		return array;
-	} else {
-		return json_array();
+		if (res_ptr) {
+			while ((sqlrow = mysql_fetch_row(res_ptr))) {
+				json_t *data = json_object();
+				json_object_set(data, "productId", json_string(sqlrow[0]) );
+				//json_object_set(data, "productCode", json_string(sqlrow[1]));
+				json_object_set(data, "productName", json_string(sqlrow[2]));
+				//json_object_set(data, "typeId", json_string(sqlrow[3]) );
+				//json_object_set(data, "brand", json_string(sqlrow[4]));
+				json_object_set(data, "price", json_string( sqlrow[5]) );
+				//json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
+				//json_object_set(data, "description", json_string(sqlrow[7]));
+				json_object_set(data, "image", json_string(sqlrow[8]));
+				//json_object_set(data, "saleOff", json_string(sqlrow[9]) );
+
+				json_array_append(array, data);
+				json_decref(data);
+			}
+			mysql_free_result(res_ptr);
+			printf("\n-------------------------Get here------------------->\n");
+		}
+		
 	}
+	//object chua total_page
+	json_t *paging_data = json_object();
+	char totalpage[10];
+	strcpy(totalpage, "");
+	sprintf(totalpage, "%d", total_page);
+	json_object_set(paging_data, "total_page", json_string(totalpage) );
+	json_array_append(array, paging_data);
+	json_decref(paging_data);
+
+	return array;
 
 }
 json_t* get_all_product() {
@@ -369,50 +396,57 @@ json_t* get_all_product() {
 	MYSQL_ROW sqlrow;
 	char query[100];
 
+	json_t *array = json_array();
+
 	//Paging
-	total_page = get_total_page("SELECT * FROM Product");
-	printf("%s\nTotal_page = %d\n", query, total_page);
+	total_page = get_total_page("SELECT * FROM product");
+	//printf("%s\nTotal_page = %d, current_page= %d\n", query, total_page, current_page);
 	
-	//lay du lieu sau khi phan trang
-	strcpy(query, "");
-	sprintf(query, "SELECT * FROM Product LIMIT %d,%d", current_page, ENTRIES_PER_PAGE);
-
-	res_ptr = get_data_from_database(query);
-
-	if (res_ptr) {
-		json_t *array = json_array();
-
-		while ((sqlrow = mysql_fetch_row(res_ptr))) {
-			json_t *data = json_object();
-			json_object_set(data, "productId", json_string(sqlrow[0]) );
-			json_object_set(data, "productCode", json_string(sqlrow[1]));
-			json_object_set(data, "productName", json_string(sqlrow[2]));
-			json_object_set(data, "typeId", json_string(sqlrow[3]) );
-			json_object_set(data, "brand", json_string(sqlrow[4]));
-			json_object_set(data, "price", json_string( sqlrow[5]) );
-			json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
-			json_object_set(data, "description", json_string(sqlrow[7]));
-			json_object_set(data, "image", json_string(sqlrow[8]));
-			json_object_set(data, "saleOff", json_string(sqlrow[9]) );
-
-			json_array_append(array, data);
+	if (total_page > 0){
+		//lay du lieu sau khi phan trang
+		int p1 = (current_page*ENTRIES_PER_PAGE);
+		int p2 = ENTRIES_PER_PAGE;
+		if (current_page == (total_page-1)){
+			p2 = number_of_entries - current_page*ENTRIES_PER_PAGE;
 		}
 
-		//object chua total_page
-		json_t *data = json_object();
-		char totalpage[5];
-		strcpy(totalpage, "");
-		sprintf(totalpage, "%d", total_page);
-		json_object_set(data, "total_page", json_string(totalpage) );
-		json_array_append(array, data);
+		strcpy(query, "");
+		sprintf(query, "SELECT * FROM product LIMIT %d,%d", p1, p2);
+		printf("Query: %s\n", query);
 		
+		res_ptr = get_data_from_database(query);
 
-		mysql_free_result(res_ptr);
+		if (res_ptr) {
+			while ((sqlrow = mysql_fetch_row(res_ptr))) {
+				json_t *data = json_object();
 
-		return array;
-	} else {
-		return json_object();
-	}	
+				json_object_set(data, "productId", json_string(sqlrow[0]) );
+				//json_object_set(data, "productCode", json_string(sqlrow[1]));
+				json_object_set(data, "productName", json_string(sqlrow[2]));
+				//json_object_set(data, "typeId", json_string(sqlrow[3]) );
+				//json_object_set(data, "brand", json_string(sqlrow[4]));
+				json_object_set(data, "price", json_string( sqlrow[5]) );
+				//json_object_set(data, "quantityInStock", json_string(sqlrow[6]) );
+				//json_object_set(data, "description", json_string(sqlrow[7]));
+				json_object_set(data, "image", json_string(sqlrow[8]));
+				//json_object_set(data, "saleOff", json_string(sqlrow[9]) );
+
+				json_array_append(array, data);
+				json_decref(data);
+			}
+			mysql_free_result(res_ptr);	
+		}
+	}
+
+	//object chua total_page
+	json_t *paging_data = json_object();
+	char totalpage[5];
+	strcpy(totalpage, "");
+	sprintf(totalpage, "%d", total_page);
+	json_object_set(paging_data, "total_page", json_string(totalpage) );
+	json_array_append(array, paging_data);
+	json_decref(paging_data);
+	return array;
 }
 
 json_t* get_type_by_gender(int gender)
@@ -421,13 +455,11 @@ json_t* get_type_by_gender(int gender)
 	MYSQL_ROW sqlrow;
 	char query[100];
 
-	sprintf(query, "SELECT * FROM ProductType WHERE Gender='%d'", gender);
+	sprintf(query, "SELECT * FROM producttype WHERE Gender=%d", gender);
 	res_ptr = get_data_from_database(query);
-
 
 	if (res_ptr) {
 		json_t *array = json_array();
-
 		while ((sqlrow = mysql_fetch_row(res_ptr))) {
 			json_t *data = json_object();
 
@@ -437,8 +469,8 @@ json_t* get_type_by_gender(int gender)
 			json_object_set(data, "kind", json_string(sqlrow[3]) );
 
 			json_array_append(array, data);
+			json_decref(data);
 		}
-
 		mysql_free_result(res_ptr);
 		return array;
 	} else {
@@ -549,8 +581,9 @@ void response_data(int success, json_t *data, int client_sockfd) {
 	else json_object_set(root, "success", json_false());
 	json_object_set(root, "data", data);
 
+	//char *decode = json_dumps(root, 1);
 	char *decode = json_dumps(root, 1);
-
+	
 	write(client_sockfd, decode, 500);
 
 	json_decref(root);
@@ -597,12 +630,11 @@ MYSQL_RES* get_data_from_database(char *query) {
 
 int get_total_page(char* query){
 	MYSQL_RES *res_ptr;
-	unsigned long number_of_entries; //so ban ghi lay duoc
 	res_ptr = get_data_from_database(query);
 	if(res_ptr == NULL) return 0;
 
 	number_of_entries = (unsigned long)mysql_num_rows(res_ptr);
 	mysql_free_result(res_ptr);
-	printf("number_of_entries = %lu, ENTRIES_PER_PAGE = %d\n", number_of_entries, ENTRIES_PER_PAGE);
+	//printf("number_of_entries = %lu, ENTRIES_PER_PAGE = %d\n", number_of_entries, ENTRIES_PER_PAGE);
 	return ceil( (float)number_of_entries/(float)ENTRIES_PER_PAGE );
 }

@@ -11,7 +11,7 @@ struct product{
 	char productName[255]; //ten san pham
 	int typeId; //id cua productType tuong ung
 	char brand[30]; //nhan hieu san pham
-	double price; //gia
+	long price; //gia
 	int quantityInStock; //so luong co trong kho hang
 	char description[255]; //mo ta san pham
 	char image[255]; //link anh san pham
@@ -48,12 +48,9 @@ void get_all_product(int sockfd,
 /**
 Lay tat ca cac san pham trong 1 type
 	params:
-		int sockfd; socket descriptor cua socket ket noi toi server
+		...
 		char* typeId; id cua productType can lay
-		char* current_page; trang hien tai, phuc vu viec phan trang
-		struct product product_list[]; mang luu tru danh sach san pham tra ve
-		int *product_list_size; do lon cua mang product_list
-		char* total_page; tong so trang ket qua
+		...
 **/
 void get_all_product_by_type(int sockfd,
 							char* typeId,
@@ -62,12 +59,23 @@ void get_all_product_by_type(int sockfd,
 				 			int *product_list_size,
 				 			char* total_page);
 
-
+/**
+Lay tat ca cac san pham trong 1 gender
+	params:
+		...
+		char* gender; gioi tinh, "1"-Nam, "2"-Nu
+		...
+**/
+void get_all_product_by_gender(int sockfd,
+							 char* gender,
+							 char* page_num,
+							 struct product product_list[],
+					 		 int *product_list_size,
+					 		 char* total_page);
 /**
 Lay tat ca cac productType dua tren gioi tinh
 	params:
-		int sockfd; socket descriptor cua socket ket noi toi server
-		char* gender; gioi tinh, "1"-Nam, "2"-Nu
+		...
 		struct productType product_type_list[]; mang luu tru danh sach productType tra ve
 		int *product_type_list_size; do lon cua mang product_type_list
 **/
@@ -79,6 +87,8 @@ void get_product_type_by_gender(int sockfd,
 /**
 In cac list - de test
 **/
+
+
 void print_product_list(struct product product_list[], int product_list_size);
 void print_product_type_list(struct productType product_type_list[],
 							int product_type_list_size);
