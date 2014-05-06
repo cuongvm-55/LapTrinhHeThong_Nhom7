@@ -11,36 +11,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <signal.h>
-
-struct Customer {
-	char *id;
-	const char *name;
-	const char *email;
-	const char *address;
-	const char *phone;
-	gboolean is_male;
-};
-
-// struct Product {
-// 	const char *name;
-// 	const char *brand;
-// 	int price;
-// 	int sale_off;
-// };
-
-struct product {
-	int productId; //id cua san pham
-	char *productCode; //ma quan li cua san pham
-	char *productName; //ten san pham
-	int typeId; //id cua productType tuong ung
-	char *brand; //nhan hieu san pham
-	unsigned int price; //gia
-	int quantityInStock; //so luong co trong kho hang
-	char *description; //mo ta san pham
-	char *image; //link anh san pham
-	int saleOff; //phan tram giam gia, e.x. 20 <-> 20%, 30 <-> 30%
-	int current_quantity;
-};
+#include "order.h"
 
 struct Customer customer;
 
@@ -146,40 +117,10 @@ void initProduct() {
 	products[3].current_quantity = 4;
 }
 
-int findWidgets(void);
-void changeStep(int);
-void getInfos(int);
-void setInfos(int);
-void to_next_step(void);
-void printCustomer(struct Customer customer);
-void addProductLine(char *data);
-char *printProduct(struct product product);
-void fillAllProducts();
-
 void closeApp(GtkWidget *window, gpointer data) {
 	printf("Quit graphic mode.\n");
 	gtk_main_quit();
 }
-
-/**
-	Sending data to server
-	Parameters:
-		char *type: type of data
-		json_t *data: data object
-		int sockfd: connection
-		void (*callback)(char*): callback function
-*/
-char* get_data(char *type, json_t *data);
-
-/**
-	Get POST value
-	Parameters:
-		json_t *root: root data
-		char *key: key of value
-*/
-const char *get_value(json_t *root, char* key);
-
-int is_customer_info_changes(json_t* root, const gchar* name, const gchar* email, const gchar* address, gboolean gender);
 
 /* Callback allows the application to cancel a close/destroy event (Return TRUE to cancel) */
 gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data) {
@@ -324,47 +265,6 @@ void on_entry_name_changed(GtkWidget *entry, gpointer data) {
 
 void on_entry_phone_changed(GtkWidget *entry, gpointer data) {
 	gtk_widget_set_visible(label_lack_phone, FALSE);
-}
-
-int main(int argc, char *argv[])
-{
-	// Json parser error variable
-    json_error_t error;
-
-	gtk_init(&argc, &argv);
-
-	int build_status = findWidgets();
-	if (build_status == 1) return 1;
-
-	gtk_widget_grab_focus(entry_name);
-
-	// Event handlers
-	g_signal_connect(window, "destroy", G_CALLBACK(closeApp), NULL);
-	g_signal_connect(window, "delete_event", G_CALLBACK(delete_event), NULL);
-
-	g_signal_connect(button_step_1, "clicked", G_CALLBACK(on_step_1_clicked), NULL);
-	g_signal_connect(button_step_2, "clicked", G_CALLBACK(on_step_2_clicked), NULL);
-	g_signal_connect(button_step_3, "clicked", G_CALLBACK(on_step_3_clicked), NULL);
-	g_signal_connect(button_next_step, "clicked", G_CALLBACK(on_next_step_clicked), NULL);
-
-	g_signal_connect(entry_name, "activate", G_CALLBACK(on_entry_name_activate), NULL);
-	g_signal_connect(entry_phone, "activate", G_CALLBACK(on_entry_phone_activate), NULL);
-	g_signal_connect(entry_name_full, "activate", G_CALLBACK(on_entry_name_full_activate), NULL);
-	g_signal_connect(entry_email, "activate", G_CALLBACK(on_entry_email_activate), NULL);
-	g_signal_connect(entry_address, "activate", G_CALLBACK(on_entry_address_activate), NULL);
-	g_signal_connect(entry_phone_full, "activate", G_CALLBACK(on_entry_phone_full_activate), NULL);
-	g_signal_connect(entry_message, "activate", G_CALLBACK(on_entry_message_activate), NULL);
-
-	g_signal_connect(entry_name, "changed", G_CALLBACK(on_entry_name_changed), NULL);
-	g_signal_connect(entry_phone, "changed", G_CALLBACK(on_entry_phone_changed), NULL);
-
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-	gtk_widget_show(window);
-   
-    /* Start main loop */ 
-	gtk_main();
-
-	return 0;
 }
 
 /**
@@ -687,53 +587,53 @@ int findWidgets() {
 		int sockfd: connection
 		void (*callback)(char*): callback function
 */
-char* get_data(char *type, json_t *data) {
-	int sockfd;
-	int len;
-	struct sockaddr_in address;
-	int result;
+// char* get_data(char *type, json_t *data) {
+// 	int sockfd;
+// 	int len;
+// 	struct sockaddr_in address;
+// 	int result;
 	
-	sockfd = socket(PF_INET, SOCK_STREAM, 0);
-	address.sin_family = PF_INET;
-	// To bind socket with localhost
-	// address.sin_addr.s_addr = inet_addr("127.0.0.1");
-	// To bind socket with all interface
-	address.sin_addr.s_addr = htonl(INADDR_ANY);
-	address.sin_port = htons(9733);
-	len = sizeof(address);
-	result = connect(sockfd, (struct sockaddr *)&address, len);
+// 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
+// 	address.sin_family = PF_INET;
+// 	// To bind socket with localhost
+// 	// address.sin_addr.s_addr = inet_addr("127.0.0.1");
+// 	// To bind socket with all interface
+// 	address.sin_addr.s_addr = htonl(INADDR_ANY);
+// 	address.sin_port = htons(9733);
+// 	len = sizeof(address);
+// 	result = connect(sockfd, (struct sockaddr *)&address, len);
 
-	if (result == -1) {
-		perror("oops: client");
-		exit(1);
-	}
+// 	if (result == -1) {
+// 		perror("oops: client");
+// 		exit(1);
+// 	}
 
-	pid_t child_pid;
+// 	pid_t child_pid;
 
-	json_t *root = json_object();
-	json_t *j_type = json_string(type);
+// 	json_t *root = json_object();
+// 	json_t *j_type = json_string(type);
 
-	json_object_set(root, "type", j_type);
-	json_object_set(root, "data", data);
+// 	json_object_set(root, "type", j_type);
+// 	json_object_set(root, "data", data);
 
-	// Convert JSON data to string
-	char *decode = json_dumps(root, 1);
+// 	// Convert JSON data to string
+// 	char *decode = json_dumps(root, 1);
 
-	write(sockfd, decode, 500);
+// 	write(sockfd, decode, 500);
 
-	printf("Send data:\n%s\n", decode);
+// 	printf("Send data:\n%s\n", decode);
 
-	char *result_string = (char *) malloc(500*sizeof(char));
+// 	char *result_string = (char *) malloc(500*sizeof(char));
 
-	read(sockfd, result_string, 500);
+// 	read(sockfd, result_string, 500);
 
-	json_decref(root);
-	json_decref(j_type);
+// 	json_decref(root);
+// 	json_decref(j_type);
 
-	close(sockfd);
+// 	close(sockfd);
 
-	return result_string;
-}
+// 	return result_string;
+// }
 
 /**
 	Get POST value
@@ -741,34 +641,38 @@ char* get_data(char *type, json_t *data) {
 		json_t *root: root data
 		char *key: key of value
 */
-const char *get_value(json_t *root, char* key) {
-	json_t *is_success = json_object_get(root, "success");
+// const char *get_value(json_t *root, char* key) {
+// 	json_t *is_success = json_object_get(root, "success");
 
-	if (is_success == json_true()) {
-		json_t *j_data = json_object_get(root, "data");
+// 	if (is_success == json_true()) {
+// 		json_t *j_data = json_object_get(root, "data");
 
-		json_t *j_object = json_object_get(j_data, key);
+// 		json_t *j_object = json_object_get(j_data, key);
 
-		if (j_object) {
-			if (json_string_value(j_object)) return json_string_value(j_object);
-			else return "";
-		} else {
-			return "";
-		}
+// 		if (j_object) {
+// 			if (json_string_value(j_object)) return json_string_value(j_object);
+// 			else return "";
+// 		} else {
+// 			return "";
+// 		}
 
-		json_decref(j_data);
-		json_decref(j_object);
-	} else {
-		return "";
-	}
+// 		json_decref(j_data);
+// 		json_decref(j_object);
+// 	} else {
+// 		return "";
+// 	}
 
-	json_decref(is_success);
-	// json_t *j_object = json_object_get(is_success, key);
+// 	json_decref(is_success);
+// 	// json_t *j_object = json_object_get(is_success, key);
 
-	// if (!j_object) {
-	// 	return 0;
-	// } else {
-	// 	if (json_string_value(j_object)) return json_string_value(j_object);
-	// 	else return 0;
-	// }
+// 	// if (!j_object) {
+// 	// 	return 0;
+// 	// } else {
+// 	// 	if (json_string_value(j_object)) return json_string_value(j_object);
+// 	// 	else return 0;
+// 	// }
+// }
+
+void testfun() {
+	printf("%s\n", "Fuck you!");
 }

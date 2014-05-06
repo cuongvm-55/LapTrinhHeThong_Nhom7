@@ -21,7 +21,7 @@ struct product{
 	char productName[255]; //ten san pham
 	int typeId; //id cua productType tuong ung
 	char brand[30]; //nhan hieu san pham
-	double price; //gia
+	long price; //gia
 	int quantityInStock; //so luong co trong kho hang
 	char description[255]; //mo ta san pham
 	char image[255]; //link anh san pham
@@ -88,8 +88,10 @@ void *thread_function(void *arg){
 	printf("Getting data from server...\n");
 	int* sockfd=(int*)arg;
 	char* result_string = (char *) malloc(500*sizeof(char));
-	while(read(*sockfd, result_string, 500) <= 0){
-	}
+	//while(read(*sockfd, result_string, 1000) <= 0){
+	//}
+	read(*sockfd, result_string, 500);
+	//printf("response_data: \n\t%s\n", result_string);
 	pthread_exit(result_string);
 }
 /**
@@ -101,7 +103,6 @@ void *thread_function(void *arg){
 		void (*callback)(char*): callback function
 */
 char* get_data(char *type, json_t *data, int* sockfd) {
-	char buf[500];
 	pthread_t a_thread;
 	void* thread_result;
 
@@ -175,21 +176,21 @@ void get_product_list_listener(char* response_data,
 	object = json_object_get(root, "data"); //lay mang object tu root voi key="data"
 	n = json_array_size(object);
 
-	printf("Size: n = %d\n", n);
+	printf("product_type Size: n = %d\n", n);
 
 	for (i=0;i<n-1;i++){
 		element = json_array_get(object, i);
 
 		product_list[i].productId = atoi(json_string_value(json_object_get(element, "productId")));
-		strcpy( product_list[i].productCode, json_string_value(json_object_get(element, "productCode")) );
+		//strcpy( product_list[i].productCode, json_string_value(json_object_get(element, "productCode")) );
 		strcpy( product_list[i].productName, json_string_value(json_object_get(element, "productName")) );
-		product_list[i].typeId = atoi(json_string_value(json_object_get(element, "typeId")));
-		strcpy( product_list[i].brand, json_string_value(json_object_get(element, "brand")) );
-		product_list[i].price = atof( json_string_value(json_object_get(element, "price")) );
-		product_list[i].quantityInStock = atoi(json_string_value(json_object_get(element, "quantityInStock")));
-		strcpy( product_list[i].description, json_string_value(json_object_get(element, "description")) );
+		//product_list[i].typeId = atoi(json_string_value(json_object_get(element, "typeId")));
+		//strcpy( product_list[i].brand, json_string_value(json_object_get(element, "brand")) );
+		product_list[i].price = (long)atof( json_string_value(json_object_get(element, "price")) );
+		//product_list[i].quantityInStock = atoi(json_string_value(json_object_get(element, "quantityInStock")));
+		//strcpy( product_list[i].description, json_string_value(json_object_get(element, "description")) );
 		strcpy( product_list[i].image, json_string_value(json_object_get(element, "image")) );
-		product_list[i].saleOff = atoi( json_string_value(json_object_get(element, "saleOff")) );
+		//product_list[i].saleOff = atoi( json_string_value(json_object_get(element, "saleOff")) );
 		
 	}
 
@@ -220,6 +221,21 @@ void get_all_product_by_type(int sockfd,
 	get_product_list_listener(response_data, product_list, product_list_size, total_page);
 }
 
+void get_all_product_by_gender(int sockfd,
+							 char* gender,
+							 char* page_num,
+							 struct product product_list[],
+					 		 int *product_list_size,
+					 		 char* total_page){
+	json_t *data = json_object();
+	json_object_set(data, "gender", json_string(gender));
+	json_object_set(data, "current_page", json_string(page_num));
+
+	char* response_data = get_data("ggender", data, &sockfd);
+	
+	get_product_list_listener(response_data, product_list, product_list_size, total_page);
+}
+
 
 void get_all_product(int sockfd,
 					 char* page_num,
@@ -230,7 +246,6 @@ void get_all_product(int sockfd,
 	json_object_set(data, "current_page", json_string(page_num));
 
 	char* response_data = get_data("gallproduct", data, &sockfd);
-	//printf("data from server: \n%s\n", response_data);
 	get_product_list_listener(response_data, product_list, product_list_size, total_page);
 }
 
@@ -255,8 +270,6 @@ void get_product_type_list_listener(char* response_data,
 	object = json_object_get(root, "data"); //lay mang object tu root voi key="data"
 	n = json_array_size(object);
 
-	printf("Size: n = %d\n", n);
-
 	for (i=0;i<n;i++){
 		element = json_array_get(object, i);
 
@@ -277,6 +290,5 @@ void get_product_type_by_gender(int sockfd,
 	json_object_set(data, "gender", json_string(gender));
 
 	char* response_data = get_data("ggendertype", data, &sockfd);
-	//printf("data from server: \n%s\n", response_data);
 	get_product_type_list_listener(response_data, product_type_list, product_type_list_size);
 }

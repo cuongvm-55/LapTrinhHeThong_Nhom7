@@ -11,7 +11,7 @@ GtkFrame {
 
 GtkTreeView {
     -GtkWidget-focus-line-width: 0;
-    -GtkTreeView-vertical-separator: 20;  /* height of cells */
+    -GtkTreeView-vertical-separator: 15;  /* height of cells */
     background-color: #fff;   /*  CadetBlue  */
 }
 
