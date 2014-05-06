@@ -167,8 +167,8 @@ void on_login_clicked(GtkWidget *button, gpointer data)
 
 }
 
-//----Xu li trang sua thong tin san pham----
-void edit_window(gpointer data){
+/*Xu li trang sua thong tin san pham
+void manipulate_edit_window(gpointer data){
   	GtkBuilder *builder = gtk_builder_new();
   	gtk_builder_add_from_file(builder, "product_screen.glade", NULL);
    	
@@ -197,24 +197,8 @@ void edit_window(gpointer data){
 	//g_signal_connect(button_ok, "clicked", G_CALLBACK(on_ok_clicked), NULL);
 	gtk_widget_show_all(window_edit);
 	
-}
-//ham su ly su kien click chuot
-static gboolean
- button_press_callback (GtkWidget      *event_box,
-                        GdkEventButton *event,
-                        gpointer        data)
-{
-	g_print ("Edit!\n");
- 	edit_window(data);
-
- /* Returning TRUE means we handled the event, so the signal
-  * emission should be stopped (don't call any further
-  * callbacks that may be connected). Return FALSE
-  * to continue invoking callbacks.
-  */
- return TRUE;
-}
-//-------------end---------------
+}*/
+//
 int findWidgets()
 {
 	// Gerror
@@ -259,109 +243,10 @@ int findWidgets()
 	g_object_unref(G_OBJECT(builder));
 	return 0;
 }
-//--------------------popup menu------------------
-
-/*void view_popup_menu_onEdit (GtkWidget *menuitem, gpointer userdata)
-{
-    // we passed the view as userdata when we connected the signal
-    GtkTreeView *treeview = GTK_TREE_VIEW(userdata);
-
-    g_print ("Edit!\n");
-}*/
-void view_popup_menu_onDelete (GtkWidget *menuitem, gpointer userdata)
-{
-    /* we passed the view as userdata when we connected the signal */
-    GtkTreeView *treeview = GTK_TREE_VIEW(userdata);
-
-    g_print ("Delete!\n");
-}
-
-void view_popup_menu (GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
-{
-    GtkWidget *menu, *edit, *delete;
-
-    menu = gtk_menu_new();
-
-    edit = gtk_menu_item_new_with_label("Edit");
-	delete = gtk_menu_item_new_with_label("Delete");
-
-    g_signal_connect(edit, "activate",
-                     (GCallback) button_press_callback, treeview);
-	g_signal_connect(delete, "activate",
-                     (GCallback) view_popup_menu_onDelete, treeview);
-
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), edit);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), delete);
-
-    gtk_widget_show_all(menu);
-
-    /* Note: event can be NULL here when called from view_onPopupMenu;
-     *  gdk_event_get_time() accepts a NULL argument */
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
-                   (event != NULL) ? event->button : 0,
-                   gdk_event_get_time((GdkEvent*)event));
-}
-
-
-gboolean view_onButtonPressed (GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
-{
-    /* single click with the right mouse button? */
-    if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
-    {
-      g_print ("Single right click on the tree view.\n");
-
-      /* optional: select row if no row is selected or only
-       *  one other row is selected (will only do something
-       *  if you set a tree selection mode as described later
-       *  in the tutorial) */
-      if (1)
-      {
-        GtkTreeSelection *selection;
-
-        selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
-
-        /* Note: gtk_tree_selection_count_selected_rows() does not
-         *   exist in gtk+-2.0, only in gtk+ >= v2.2 ! */
-        if (gtk_tree_selection_count_selected_rows(selection)  <= 1)
-        {
-           GtkTreePath *path;
-
-           /* Get tree path for row that was clicked */
-           if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
-                                             (gint) event->x, 
-                                             (gint) event->y,
-                                             &path, NULL, NULL, NULL))
-           {
-             gtk_tree_selection_unselect_all(selection);
-             gtk_tree_selection_select_path(selection, path);
-             gtk_tree_path_free(path);
-           }
-        }
-      } /* end of optional bit */
-
-      view_popup_menu(treeview, event, userdata);
-
-      return TRUE; /* we handled this */
-    }
-
-    return FALSE; /* we did not handle this */
-}
-
-
-gboolean view_onPopupMenu (GtkWidget *treeview, gpointer userdata)
-{
-    view_popup_menu(treeview, NULL, userdata);
-
-    return TRUE; /* we handled this */
-}
-
-//-------------------end--------------------------
 //Sublime
 //------------------------Tao bang product---------------------------------------------------------
 enum{
 	COL_STT = 0,
-	//COL_DELETE,
-	//COL_EDIT,
 	COL_NAME,
 	COL_DESCRIPTION,
 	NUM_COLS
@@ -372,22 +257,18 @@ static GtkTreeModel *create_and_fill_model(void)
 {
 	GtkListStore *store;
 	GtkTreeIter	iter;
-	GtkWidget *button;
-
-	//button = GTK_WIDGET(gtk_builder_get_object(builder, "button_delete"));
 	/* Create a new button */
-    //button = gtk_button_new ();
+    button = gtk_button_new ();
 
 	store = gtk_list_store_new(NUM_COLS, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	
 	int i =0, n=5; //
 	for (i=1; i<=n;i++){
-		//gtk_container_add (GTK_CONTAINER (button), box_product_list);
+		gtk_container_add (GTK_CONTAINER (button), box1);
 		//them 1 dong va them du lieu
 		gtk_list_store_append(store, &iter);
 		gtk_list_store_set(store, &iter,
 						COL_STT, i,
-						//COL_DELETE,
 						COL_NAME, "product name",
 						COL_DESCRIPTION, "product description",
 						-1);
@@ -416,12 +297,11 @@ static GtkWidget *create_view_and_model()
 												renderer,
 												"text", 0,
 												NULL);
-	/*
 	//Cot #2
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
 												-1,
-												"DELETE",
+												"DEL",
 												renderer,
 												"text", 1,
 												NULL);
@@ -433,14 +313,13 @@ static GtkWidget *create_view_and_model()
 												renderer,
 												"text", 2,
 												NULL);
-	*/
 	//Cot #4
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
 												-1,
 												"NAME",
 												renderer,
-												"text", 1,
+												"text", 3,
 												NULL);
 	//Cot #5
 	renderer = gtk_cell_renderer_text_new();
@@ -448,17 +327,12 @@ static GtkWidget *create_view_and_model()
 												-1,
 												"DESCRIPTION",
 												renderer,
-												"text", 2,
+												"text", 4,
 												NULL);
 	
 	model = create_and_fill_model();
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW(view), model);
-	
-	//---------ket noi su kien voi popup menu------
-	g_signal_connect(view, "button-press-event", (GCallback) view_onButtonPressed, NULL);
-    g_signal_connect(view, "popup-menu", (GCallback) view_onPopupMenu, NULL);
-	//---------end----------
 
 	/* The tree view has acquired its own reference to the
    *  model, so we can drop ours. That way the model will
