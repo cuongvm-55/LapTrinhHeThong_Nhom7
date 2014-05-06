@@ -42,6 +42,7 @@ json_t* get_customer(const char *phone);
 json_t* new_customer(const char* name, const char* email, const char* address, const char* phone, const char* gender, const char* message);
 json_t* update_customer(const char* id, const char* name, const char* email, const char* address, const char* gender);
 json_t* new_order(const char* customer_id, const char* message);
+json_t* new_order_detail(const char* order_id, const char* product_id, const char* quantity);
 
 int main(int argc, char*argv[]) {
 
@@ -137,6 +138,15 @@ int main(int argc, char*argv[]) {
 
 		    		response_data(1, data, client_sockfd);
 
+		    	} else if (strcmp(type, "porderdetail") == 0) {
+		    		const char * order_id = get_value(root, "oid");
+		    		const char * product_id = get_value(root, "pid");
+		    		const char * quantity = get_value(root, "quantity");
+
+		    		json_t *data = new_order_detail(order_id, product_id, quantity);
+
+		    		response_data(1, data, client_sockfd);
+
 		    	// Default
 		    	} else {
 		    		response_data(0, json_object(), client_sockfd);
@@ -212,6 +222,29 @@ json_t* new_order(const char* customer_id, const char* message) {
 	char query[200];
 	sprintf(query, "INSERT INTO shop.order (OrderDate, Status, Message, CustomerId, CreatedAt) VALUES (now(), 'Pending', '%s', '%s', now())",
 		message, customer_id);
+	printf("%s\n", query);
+	res_ptr = get_data_from_database(query);
+
+	return json_object();
+}
+
+json_t* new_order_detail(const char* order_id, const char* product_id, const char* quantity) {
+	MYSQL_RES *res_ptr;
+
+	char query[200];
+	sprintf(query, "INSERT INTO shop.orderdetail (OrderId, ProductId, Quantity) VALUES ('%s', '%s', '%s')",
+		order_id, product_id, quantity);
+	printf("%s\n", query);
+	res_ptr = get_data_from_database(query);
+
+	return json_object();
+}
+
+json_t* get_order_id(const char* customer_id) {
+	MYSQL_RES *res_ptr;
+
+	char query[200];
+	sprintf(query, "SELECT * FROM shop.order WHERE shop.CustomerId = '%s'", customer_id);
 	printf("%s\n", query);
 	res_ptr = get_data_from_database(query);
 
@@ -295,63 +328,3 @@ MYSQL_RES* get_data_from_database(char *query) {
 
 	mysql_library_end();
 }
-
-// json_t* get_customer_data(char *phone) {
-
-// 	int result;
-// 	mysql_init(&my_connection);
-// 	if (mysql_real_connect(&my_connection, "localhost", "root", "6789", "shop", 0, NULL, 0)) {
-// 		printf("Connection is successfully\n");
-// 		result = mysql_query(&my_connection, "SET NAMES utf8");
-
-// 		char query[100];
-		
-// 		sprintf(query, "SELECT * FROM customer WHERE phone=%s", phone);
-
-// 		result = mysql_query(&my_connection, query);
-// 		if (!result) {
-// 			res_ptr = mysql_store_result(&my_connection);
-// 			if (res_ptr) {
-// 				printf("Retrieved %lu rows\n", (unsigned long) mysql_num_rows(res_ptr));
-// 				printf("List of results\n");
-// 				while ((sqlrow = mysql_fetch_row(res_ptr))) {
-// 					printf("Customer ID: %s, Customer name: %s\n", sqlrow[0], sqlrow[1]);
-
-// 					json_t *data = json_object();
-// 					json_object_set(data, "id", json_string(sqlrow[0]));
-// 					json_object_set(data, "name", json_string(sqlrow[1]));
-// 					json_object_set(data, "phone", json_string(sqlrow[2]));
-// 					json_object_set(data, "address", json_string(sqlrow[3]));
-// 					json_object_set(data, "email", json_string(sqlrow[4]));
-// 					json_object_set(data, "gender", json_string(sqlrow[5]));
-// 					json_object_set(data, "created_at", json_string(sqlrow[6]));
-// 					json_object_set(data, "updated_at", json_string(sqlrow[7]));
-
-// 					return data;
-// 				}
-
-// 				if (mysql_errno(&my_connection)) {
-// 					fprintf(stderr, "Retrive error: %s\n", mysql_error(&my_connection));
-// 				}
-
-// 				mysql_free_result(res_ptr);
-// 			}
-// 		} else {
-// 			printf("SELECT error: %s\n", mysql_error(&my_connection));
-// 			return json_object();
-// 		}
-
-// 		mysql_close(&my_connection);
-
-// 	} else {
-// 		fprintf(stderr, "Connection failed\n");
-// 		if (mysql_errno(&my_connection)) {
-// 			fprintf(stderr, "Connection error %d: %s\n", mysql_errno(&my_connection), mysql_error(&my_connection));
-// 		}
-
-// 		return json_object();
-// 	}
-
-// 	mysql_library_end();
-// 	return json_object();
-// }
